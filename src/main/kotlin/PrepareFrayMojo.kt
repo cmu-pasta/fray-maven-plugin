@@ -36,13 +36,15 @@ class PrepareFrayMojo: AbstractMojo() {
     @Throws(MojoExecutionException::class)
     override fun execute() {
         val jdkPath = destFile!!.absolutePath + "/fray-java"
-        val jvmtiPath = destFile!!.absolutePath + "/fray-jvmti"
+        val jvmtiPath = destFile.absolutePath + "/fray-jvmti"
+        val reportPath = destFile.absolutePath + "/fray-report"
         createInstrumentedJdk(jdkPath)
         prepareAgentLib(jvmtiPath)
 
         val oldValue = project!!.properties.getProperty("argLine") ?: ""
         project.properties.setProperty("argLine", oldValue + " -javaagent:" + getAgentJarFile().absolutePath
-                + " -agentpath:" + jvmtiPath + "/libjvmti.so")
+                + " -agentpath:" + jvmtiPath + "/libjvmti.so" +
+                " -Dfray.workDir=" + reportPath)
         project.properties.setProperty("jvm", "$jdkPath/bin/java")
     }
 
