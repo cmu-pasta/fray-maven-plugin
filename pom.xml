@@ -6,7 +6,7 @@
 
     <groupId>org.pastalab.fray.maven</groupId>
     <artifactId>fray-maven-plugin</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.1.1</version>
     <packaging>maven-plugin</packaging>
 
     <prerequisites>
@@ -17,8 +17,16 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
-        <fray.version>0.1</fray.version>
+        <fray.version>0.1.1</fray.version>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub CMU-Pasta Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/cmu-pasta/fray</url>
+        </repository>
+    </distributionManagement>
 
     <repositories>
         <repository>
