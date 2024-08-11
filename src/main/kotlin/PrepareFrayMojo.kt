@@ -2,6 +2,7 @@ package org.pastalab.fray.maven
 
 import org.apache.maven.artifact.Artifact
 import org.apache.maven.execution.MavenSession
+import org.apache.maven.model.Dependency
 import org.apache.maven.plugin.AbstractMojo
 import org.apache.maven.plugin.MojoExecutionException
 import org.apache.maven.plugins.annotations.Component
@@ -11,7 +12,7 @@ import org.apache.maven.plugins.annotations.Parameter
 import org.apache.maven.plugins.annotations.ResolutionScope
 import org.apache.maven.project.MavenProject
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder
-import org.apache.maven.shared.dependency.graph.DependencyNode
+import org.codehaus.plexus.util.xml.Xpp3Dom
 import java.io.File
 import java.util.jar.JarFile
 
@@ -26,34 +27,27 @@ class PrepareFrayMojo: AbstractMojo() {
     @Parameter(defaultValue = "\${project}", readonly = true, required = true)
     private val project: MavenProject? = null
 
-    @Parameter(defaultValue = "\${session}", readonly = true, required = true)
-    private val session: MavenSession? = null
-
-
     @Parameter(property = "plugin.artifactMap", required = true, readonly = true)
     private val pluginArtifactMap: Map<String, Artifact>? = null
 
     @Parameter(property = "fray.workDir", defaultValue = "\${project.build.directory}/fray")
     private val destFile: File? = null
 
-    @Component
-    private val projectDependenciesResolver: DependencyGraphBuilder? = null
-
-
     @Throws(MojoExecutionException::class)
     override fun execute() {
         val jdkPath = destFile!!.absolutePath + "/fray-java"
         val jvmtiPath = destFile!!.absolutePath + "/fray-jvmti"
-        val oldValue = project!!.properties.getProperty("argLine") ?: ""
         createInstrumentedJdk(jdkPath)
         prepareAgentLib(jvmtiPath)
+
+        val oldValue = project!!.properties.getProperty("argLine") ?: ""
         project.properties.setProperty("argLine", oldValue + " -javaagent:" + getAgentJarFile().absolutePath
                 + " -agentpath:" + jvmtiPath + "/libjvmti.so")
         project.properties.setProperty("jvm", "$jdkPath/bin/java")
     }
 
     fun getAgentJarFile(): File {
-        return pluginArtifactMap!!["org.pastalab.fray:instrumentation-agent"]!!.file
+        return pluginArtifactMap!!["org.pastalab.fray.instrumentation:agent"]!!.file
     }
 
     fun getJvmtiJarFile(): File {
@@ -65,15 +59,14 @@ class PrepareFrayMojo: AbstractMojo() {
         }
 
         val arch = System.getProperty("os.arch")
-        return pluginArtifactMap!!["org.pastalab.fray:jvmti-$os-$arch"]!!.file
+        return pluginArtifactMap!!["org.pastalab.fray.instrumentation:jvmti-$os-$arch"]!!.file
     }
-
 
     fun prepareAgentLib(path: String) {
         val jvmtiPath = File(path)
-//        if (jvmtiPath.exists()) {
-//            return
-//        }
+        if (jvmtiPath.exists()) {
+            return
+        }
         jvmtiPath.mkdirs()
         val jvmtiJar = getJvmtiJarFile()
         val jarFile = JarFile(jvmtiJar)
@@ -90,11 +83,6 @@ class PrepareFrayMojo: AbstractMojo() {
                 }
             }
         }
-//            resolveDependencyFiles(frayJvmti.get()).filter { it.name.contains("jvmti") }.first()
-//        project.copy {
-//            it.from(project.zipTree(jvmtiJar))
-//            it.into(jvmtiPath)
-//        }
     }
 
     fun createInstrumentedJdk(path: String) {
@@ -104,31 +92,20 @@ class PrepareFrayMojo: AbstractMojo() {
         }
         val jdkJar = pluginArtifactMap!!["org.pastalab.fray:jdk"]!!.file
         val jdkJarDependencies = pluginArtifactMap.values.filter {
-            it.groupId != "org.pastalab.fray" || it.artifactId != "instrumentation-agent"
+            it.groupId != "org.pastalab.fray.instrumentation" || it.artifactId != "agent"
         }.map { it.file }
         val command = arrayOf(
                 "jlink",
                 "-J-javaagent:$jdkJar",
                 "-J--module-path=${jdkJarDependencies.joinToString(":")}",
-                "-J--add-modules=org.pastalab.fray.jdk",
+                "-J--add-modules=org.pastalab.fray.instrumentation.jdk",
                 "-J--class-path=${jdkJarDependencies.joinToString(":")}",
                 "--output=${jdkPath.absolutePath}",
                 "--add-modules=ALL-MODULE-PATH",
                 "--fray-instrumentation"
             )
         log.info("Executing command: ${command.joinToString(" ")}")
-        val process = Runtime.getRuntime().exec(
-            arrayOf(
-                "jlink",
-                "-J-javaagent:$jdkJar",
-                "-J--module-path=${jdkJarDependencies.joinToString(":")}",
-                "-J--add-modules=org.pastalab.fray.jdk",
-                "-J--class-path=${jdkJarDependencies.joinToString(":")}",
-                "--output=${jdkPath.absolutePath}",
-                "--add-modules=ALL-MODULE-PATH",
-                "--fray-instrumentation"
-            )
-        )
+        val process = Runtime.getRuntime().exec(command)
         process.waitFor()
         log.info(process.inputStream.bufferedReader().readText())
     }

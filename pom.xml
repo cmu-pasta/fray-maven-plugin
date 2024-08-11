@@ -17,6 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
+        <fray.version>0.1</fray.version>
     </properties>
 
     <repositories>
@@ -135,32 +136,20 @@
         </dependency>
 
         <dependency>
-            <groupId>org.pastalab.fray</groupId>
-            <artifactId>core</artifactId>
-            <version>0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.pastalab.fray</groupId>
-            <artifactId>instrumentation-agent</artifactId>
-            <version>0.1</version>
+            <groupId>org.pastalab.fray.instrumentation</groupId>
+            <artifactId>agent</artifactId>
+            <version>${fray.version}</version>
             <classifier>shadow</classifier>
         </dependency>
         <dependency>
-            <groupId>org.pastalab.fray</groupId>
+            <groupId>org.pastalab.fray.instrumentation</groupId>
             <artifactId>jdk</artifactId>
-            <version>0.1</version>
+            <version>${fray.version}</version>
         </dependency>
         <dependency>
             <groupId>org.pastalab.fray</groupId>
             <artifactId>jvmti-macos-aarch64</artifactId>
-            <version>0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.pastalab.fray</groupId>
-            <artifactId>junit</artifactId>
-            <version>0.1</version>
-            <scope>test</scope>
+            <version>${fray.version}</version>
         </dependency>
     </dependencies>
-
 </project>
